@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+
+  application:
+    image: php:7.1-cli
+    depends_on:
+      - nginx
+    volumes:
+      - ./:/app
+    command: bash -c "cd /app && php artisan queue:work"
+
+  nginx:
+    image: kmasteryc/nginx
+    restart: always
+    depends_on:
+      - php-fpm
+    volumes:
+      - ./:/app
+    ports:
+      - "80:80"
+
+  php-fpm:
+    image: kmasteryc/php-fpm
+    restart: always
+    depends_on:
+      - mysql
+      - redis
+      - echo-server
+    expose:
+      - "9000"
+    volumes:
+      - ./:/app
+
+  mysql:
+    image: mysql:5.7.18
+    volumes:
+      - ./.docker-data/mysql:/var/lib/mysql
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_DATABASE: test
+       MYSQL_USER: root
+       MYSQL_PASSWORD: root
+    expose:
+      - "3306"
+  
+  redis:
+    image: redis:3.0.7
+    restart: always
+    expose:
+      - "6379"
+
+  echo-server:
+    image: node:7.10
+    volumes:
+      - ./:/app
+    ports:
+      - "6001:6001"
+    command: bash -c "cd /app && node ./node_modules/laravel-echo-server/dist/cli/index.js start"
